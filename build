@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+stack build
+
+ln -f -T $(stack exec -- which xmonad-roy) $1
