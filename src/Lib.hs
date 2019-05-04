@@ -13,10 +13,33 @@ import Data.List
 import System.IO
 import Data.Function (on)
 import Control.Monad (join)
+import XMonad.Layout.NoFrillsDecoration
+
+myFont = "xft:Noto Sans CJK:size=10:antialias=true"
+backgroundColor = "#1d262b"
+red = "#ba2922"
+red1 = "#cc372c"
+blue = "#16a085"
+blue1 = "#13bf9d"
+green = "#43746a"
+green1 = "#487d72"
+
+myTheme = def 
+  { inactiveBorderColor   = backgroundColor
+  , inactiveColor         = backgroundColor
+  , inactiveTextColor     = backgroundColor
+  , activeBorderColor     = blue
+  , activeColor           = blue
+  , activeTextColor       = blue
+  , urgentBorderColor     = red
+  , urgentTextColor       = green
+  , decoHeight            = 4
+  }
+
+myLayoutHook = noFrillsDeco shrinkText myTheme $ avoidStruts $ Tall 1 0.03 0.6  ||| Full
+-- myLayoutHook = avoidStruts $ noBorders ( Tall 1 0.03 0.6  ||| Full)
 
 myWorkspaces = ["1","2","3","4","5","6","7","8","9"]
--- logFile = mapM (spawn . ("mkfifo /tmp/" ++)) [".xmonad-workspace-log", ".xmonad-title-log"]
--- >> logFile >> spawn "polybar main"
 
 myStartupHook = spawn "compton -b" >> spawn "unclutter -b"
 
@@ -34,11 +57,10 @@ myEventLogHook = do
         sort' = sortBy (compare `on` (!! 0))
 
 
-
 myConfig = def 
         { manageHook = manageDocks <+> manageHook def
         , modMask = mod4Mask
-        , layoutHook = avoidStruts $ noBorders ( Tall 1 0.03 0.6  ||| Full)
+        , layoutHook = myLayoutHook
         , terminal = "xfce4-terminal"
         , startupHook = myStartupHook
 --        , logHook = myEventLogHook
