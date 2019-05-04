@@ -14,6 +14,39 @@ import System.IO
 import Data.Function (on)
 import Control.Monad (join)
 import XMonad.Layout.NoFrillsDecoration
+import XMonad.Hooks.EwmhDesktops
+import XMonad.Actions.CopyWindow
+import XMonad.Layout.PerScreen              -- Check screen width & adjust layouts
+import XMonad.Layout.PerWorkspace           -- Configure layouts on a per-workspace
+import XMonad.Util.NamedScratchpad
+
+myLogHook h = do
+
+    -- following block for copy windows marking
+    copies <- wsContainingCopies
+    let check ws | ws `elem` copies =
+                   pad . xmobarColor green red . wrap "*" " "  $ ws
+                 | otherwise = pad ws
+
+    ewmhDesktopsLogHook
+    --dynamicLogWithPP $ defaultPP
+    dynamicLogWithPP $ def
+        { ppCurrent             = wrap "[" "]"
+        , ppTitle               = xmobarColor green "" 
+        , ppVisible             = wrap "(" ")"
+        , ppUrgent              = xmobarColor red    "" . wrap " " " "
+        , ppHidden              = check
+        , ppHiddenNoWindows     = const ""
+        , ppSep                 = xmobarColor "white" backgroundColor "  :  "
+        , ppWsSep               = " "
+        , ppLayout              = xmobarColor green "" . dropWhile (/=' ')
+        , ppOrder               = id
+        , ppOutput              = hPutStrLn h  
+        , ppSort                = fmap 
+                                  (namedScratchpadFilterOutWorkspace.)
+                                  (ppSort def)
+                                  --(ppSort defaultPP)
+        , ppExtras              = [] }
 
 myFont = "xft:Noto Sans CJK:size=10:antialias=true"
 backgroundColor = "#1d262b"
@@ -36,7 +69,7 @@ myTheme = def
   , decoHeight            = 4
   }
 
-myLayoutHook = noFrillsDeco shrinkText myTheme $ avoidStruts $ Tall 1 0.03 0.6  ||| Full
+myLayoutHook = avoidStruts $ noFrillsDeco shrinkText myTheme $ Tall 1 0.03 0.6  ||| Full
 -- myLayoutHook = avoidStruts $ noBorders ( Tall 1 0.03 0.6  ||| Full)
 
 myWorkspaces = ["1","2","3","4","5","6","7","8","9"]
@@ -57,13 +90,13 @@ myEventLogHook = do
         sort' = sortBy (compare `on` (!! 0))
 
 
-myConfig = def 
+myConfig p = def 
         { manageHook = manageDocks <+> manageHook def
         , modMask = mod4Mask
         , layoutHook = myLayoutHook
         , terminal = "xfce4-terminal"
         , startupHook = myStartupHook
---        , logHook = myEventLogHook
+        , logHook = myLogHook p
         , borderWidth = 0
         } `additionalKeysP` myKeys
 
@@ -74,4 +107,6 @@ myKeys = [ ("M-p", spawn "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mof
          (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
 
 someFunc :: IO ()
-someFunc = xmonad $ docks myConfig
+someFunc = do
+  xmproc <- spawnPipe "/home/aemaeth/.local/bin/xmobar /home/aemaeth/.xmonad/xmobar.conf -x 1"
+  xmonad $ docks $ myConfig xmproc
