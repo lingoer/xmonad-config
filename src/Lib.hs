@@ -2,12 +2,13 @@ module Lib
   ( someFunc
   )
 where
-import           XMonad hiding ((|||))
+import           XMonad                  hiding ( (|||) )
 import           XMonad.Hooks.ManageDocks
 import           XMonad.Util.Run                ( spawnPipe
                                                 , safeSpawn
                                                 )
 import           XMonad.Util.EZConfig
+import           XMonad.Actions.SpawnOn
 import           XMonad.Layout.NoBorders
 import           XMonad.Layout.LayoutCombinators
 import qualified XMonad.StackSet               as W
@@ -74,33 +75,34 @@ projects =
             , projectDirectory = "~/"
             , projectStartHook = Just $ spawn "firefox"
             }
-  , Project { projectName = "gen"
+  , Project { projectName      = "gen"
             , projectDirectory = "~/"
             , projectStartHook = Just $ spawn "xfce4-terminal"
             }
-  , Project { projectName = "proj"
+  , Project { projectName      = "proj"
             , projectDirectory = "~/proj"
             , projectStartHook = Just $ spawn "xfce4-terminal"
             }
-  , Project { projectName = "work"
+  , Project { projectName      = "work"
             , projectDirectory = "~/tappollo"
             , projectStartHook = Just $ spawn "xfce4-terminal"
             }
   ]
 myWorkspaces = ["gen", "web", "proj", "work", "5", "6", "7", "8", "extra"]
 myKeys =
-  [ ( "M-p" , spawn "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mofi' -show-icons -matching fuzzy -sorting-method fzf")
+  [ ( "M-p"
+    , spawn
+      "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mofi' -show-icons -matching fuzzy -sorting-method fzf"
+    )
   , ("M-f", spawn "firefox")
-  ] ++ [ (otherModMasks ++ "M-" ++ [key], action tag)
-       | (tag          , key   ) <- zip myWorkspaces "123456789"
-       , (otherModMasks, action) <-
-         [("", windows . W.view), ("S-", windows . W.shift)]
-       ]
+  ]
 
-myStartupHook = spawn "compton -b" >> spawn "unclutter -b"
+myStartupHook = do
+  spawn "compton -b"
+  spawn "unclutter -b"
 
 myConfig p =
-  def { manageHook  = manageDocks <+> manageHook def
+  def { manageHook  = manageSpawn <+> manageDocks <+> manageHook def
       , modMask     = mod4Mask
       , layoutHook  = myLayoutHook
       , terminal    = "xfce4-terminal"
