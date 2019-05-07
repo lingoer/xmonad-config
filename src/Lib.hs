@@ -44,40 +44,18 @@ myTheme = def { inactiveBorderColor = backgroundColor
               , decoHeight          = 4
               }
 
-myLogHook h = do
-  copies <- wsContainingCopies
-  let check ws
-        | ws `elem` copies = pad . xmobarColor green red . wrap "*" " " $ ws
-        | otherwise        = pad ws
-  ewmhDesktopsLogHook
-  dynamicLogWithPP $ def
-    { ppCurrent         = wrap "[" "]"
-    , ppTitle           = const ""
-    , ppVisible         = wrap "(" ")"
-    , ppUrgent          = xmobarColor red "" . wrap " " " "
-    , ppHidden          = check
-    , ppHiddenNoWindows = const ""
-    , ppSep             = "  :  "
-    , ppWsSep           = " "
-    , ppLayout          = const ""
-    , ppOrder           = id
-    , ppOutput          = hPutStrLn h
-    , ppSort = fmap (namedScratchpadFilterOutWorkspace .) (ppSort def)
-    , ppExtras          = []
-    }
-
 myLayoutHook =
   avoidStruts (noFrillsDeco shrinkText myTheme $ Tall 1 0.03 0.6) ||| Full
 
 projects :: [Project]
 projects =
-  [ Project { projectName      = "web"
-            , projectDirectory = "~/"
-            , projectStartHook = Just $ spawn "firefox"
-            }
-  , Project { projectName      = "gen"
+  [ Project { projectName      = "gen"
             , projectDirectory = "~/"
             , projectStartHook = Just $ spawn "xfce4-terminal"
+            }
+  , Project { projectName      = "web"
+            , projectDirectory = "~/"
+            , projectStartHook = Just $ spawn "firefox"
             }
   , Project { projectName      = "proj"
             , projectDirectory = "~/proj"
@@ -88,26 +66,45 @@ projects =
             , projectStartHook = Just $ spawn "xfce4-terminal"
             }
   ]
-myWorkspaces = ["gen", "web", "proj", "work", "5", "6", "7", "8", "extra"]
+myWorkspaces = ["gen", "web", "proj", "work"]
+scratchpads = 
+  [ NS "slack" "slack --proxy-server=\"socks5://192.168.1.107:1081\"" (className =? "Slack") defaultFloating
+  , NS "NCM" "netease-cloud-music" (className =? "netease-cloud-music") defaultFloating
+  , NS "Email" "thunderbird" (className =? "Thunderbird") nonFloating
+  ]
 myKeys =
   [ ( "M-p"
     , spawn
       "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mofi' -show-icons -matching fuzzy -sorting-method fzf"
     )
+  , ( "M-S-q"
+    , spawn
+      "xfce4-session-logout"
+    )
   , ("M-f", spawn "firefox")
+  , ("M-i", namedScratchpadAction scratchpads "slack")
+  , ("M-u", namedScratchpadAction scratchpads "NCM")
+  , ("M-S-m", namedScratchpadAction scratchpads "Email")
   ]
 
+myStartupHook:: X ()
 myStartupHook = do
-  spawn "compton -b"
   spawn "unclutter -b"
+  spawn "compton -b"
+myManageHook = composeAll
+  [ className =? "Wrapper-2.0" --> doFloat
+  , className =? "Xfce4-notes" --> doFloat
+  , namedScratchpadManageHook scratchpads
+  ]
 
-myConfig p =
-  def { manageHook  = manageSpawn <+> manageDocks <+> manageHook def
+myConfig =
+  def { manageHook  = myManageHook <+> manageSpawn <+> manageDocks <+> manageHook def
       , modMask     = mod4Mask
       , layoutHook  = myLayoutHook
       , terminal    = "xfce4-terminal"
-      , startupHook = myStartupHook
-      , logHook     = myLogHook p
+      , startupHook = ewmhDesktopsStartup >> myStartupHook
+      , logHook     = ewmhDesktopsLogHookCustom namedScratchpadFilterOutWorkspace -- myLogHook p
+      , handleEventHook = ewmhDesktopsEventHook
       , borderWidth = 0
       , workspaces  = myWorkspaces
       }
@@ -115,7 +112,4 @@ myConfig p =
 
 
 someFunc :: IO ()
-someFunc = do
-  xmproc <- spawnPipe
-    "/home/aemaeth/.local/bin/xmobar /home/aemaeth/.xmonad/xmobar.conf"
-  xmonad $ dynamicProjects projects $ docks $ myConfig xmproc
+someFunc = xmonad $ dynamicProjects projects $ docks myConfig
