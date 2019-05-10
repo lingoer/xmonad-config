@@ -66,47 +66,63 @@ projects =
             , projectStartHook = Just $ spawn "xfce4-terminal"
             }
   ]
-myWorkspaces = ["gen", "web", "proj", "work"]
-scratchpads = 
-  [ NS "slack" "slack --proxy-server=\"socks5://192.168.1.107:1081\"" (className =? "Slack") defaultFloating
-  , NS "NCM" "netease-cloud-music" (className =? "netease-cloud-music") defaultFloating
+scratchpads =
+  [ NS "slack"
+       "slack --proxy-server=\"socks5://192.168.1.107:1081\""
+       (className =? "Slack")
+       defaultFloating
+  , NS "NCM"
+       "netease-cloud-music"
+       (className =? "netease-cloud-music")
+       defaultFloating
   , NS "Email" "thunderbird" (className =? "Thunderbird") nonFloating
   ]
+myWorkspaces = ["gen", "misc", "web", "proj", "work"]
+noMisc (W.Workspace tag _ _) = tag /= "misc"
 myKeys =
   [ ( "M-p"
     , spawn
       "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mofi' -show-icons -matching fuzzy -sorting-method fzf"
     )
-  , ( "M-S-q"
-    , spawn
-      "xfce4-session-logout"
-    )
-  , ("M-f", spawn "firefox")
-  , ("M-i", namedScratchpadAction scratchpads "slack")
-  , ("M-u", namedScratchpadAction scratchpads "NCM")
-  , ("M-S-m", namedScratchpadAction scratchpads "Email")
-  ]
+    , ("M-S-q", spawn "xflock4")
+    , ("M-f"  , spawn "firefox")
+    , ("M-i"  , namedScratchpadAction scratchpads "slack")
+    , ("M-u"  , namedScratchpadAction scratchpads "NCM")
+    , ("M-S-m", namedScratchpadAction scratchpads "Email")
+    ]
+    ++ [ (m ++ k, windows $ f i)
+       | (i, k) <- zip myWorkspaces ["1", "9", "2", "3", "4"]
+       , (f, m) <- [(W.greedyView, "M-"), (W.shift, "M-S-")]
+       ]
 
-myStartupHook:: X ()
+myStartupHook :: X ()
 myStartupHook = do
   spawn "unclutter -b"
   spawn "compton -b"
+  spawn "stacer"
+  spawn "xfce4-terminal"
 myManageHook = composeAll
   [ className =? "Wrapper-2.0" --> doFloat
   , className =? "Xfce4-notes" --> doFloat
+  , className =? "stacer" --> doShift "misc"
   , namedScratchpadManageHook scratchpads
   ]
 
+
 myConfig =
-  def { manageHook  = myManageHook <+> manageSpawn <+> manageDocks <+> manageHook def
-      , modMask     = mod4Mask
-      , layoutHook  = myLayoutHook
-      , terminal    = "xfce4-terminal"
-      , startupHook = ewmhDesktopsStartup >> myStartupHook
-      , logHook     = ewmhDesktopsLogHookCustom namedScratchpadFilterOutWorkspace -- myLogHook p
-      , handleEventHook = ewmhDesktopsEventHook
-      , borderWidth = 0
-      , workspaces  = myWorkspaces
+  def
+      { manageHook      = myManageHook
+                          <+> manageSpawn
+                          <+> manageDocks
+                          <+> manageHook def
+      , modMask         = mod4Mask
+      , layoutHook      = myLayoutHook
+      , terminal        = "xfce4-terminal"
+      , startupHook     = ewmhDesktopsStartup >> myStartupHook
+      , logHook = ewmhDesktopsLogHookCustom $ filter noMisc . namedScratchpadFilterOutWorkspace -- myLogHook p
+      , handleEventHook = ewmhDesktopsEventHookCustom $ filter noMisc
+      , borderWidth     = 0
+      , workspaces      = myWorkspaces
       }
     `additionalKeysP` myKeys
 
