@@ -80,11 +80,7 @@ scratchpads =
 myWorkspaces = ["gen", "misc", "web", "proj", "work"]
 noMisc (W.Workspace tag _ _) = tag /= "misc"
 myKeys =
-  [ ( "M-p"
-    , spawn
-      "rofi -show combi -combi-modi mofi,drun -modi 'mofi:mofi' -show-icons -matching fuzzy -sorting-method fzf"
-    )
-    , ("M-S-q", spawn "xflock4")
+  [ ("M-S-q", spawn "xflock4")
     , ("M-f"  , spawn "firefox")
     , ("M-i"  , namedScratchpadAction scratchpads "slack")
     , ("M-u"  , namedScratchpadAction scratchpads "NCM")
