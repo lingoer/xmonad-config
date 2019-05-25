@@ -42,6 +42,7 @@ myTheme = def { inactiveBorderColor = backgroundColor
               , activeColor         = blue
               , activeTextColor     = blue
               , decoHeight          = 4
+              , fontName            = myFont
               }
 
 myLayoutHook =
